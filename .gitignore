@@ -1,0 +1,53 @@
+# ============================================
+# Foundry build artifacts
+# ============================================
+**/out/
+**/cache/
+
+# ============================================
+# Foundry deployments / generated reports
+# ============================================
+**/broadcast/
+**/coverage/
+**/gas-reports/
+*.gas-snapshot
+
+# ============================================
+# Dependencies
+# ============================================
+# Public course repo should stay lightweight.
+# Reinstall dependencies per project with forge install when needed.
+**/lib/
+**/node_modules/
+
+# ============================================
+# Environment / secrets
+# ============================================
+.env
+.env.*
+!.env.example
+
+# ============================================
+# Editor / OS
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ============================================
+# Logs / temp
+# ============================================
+*.log
+logs/
+tmp/
+temp/
+.tmp/
