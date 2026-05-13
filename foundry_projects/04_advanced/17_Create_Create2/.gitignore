@@ -1,0 +1,73 @@
+# ============================================
+# Foundry — build artifacts
+# ============================================
+# Compiled contracts and ABIs
+out/
+# Forge build cache
+cache/
+
+# ============================================
+# Foundry — deployments
+# ============================================
+# Ignore broadcast logs, but keep the directory structure
+/broadcast
+/broadcast/*/31337/
+/broadcast/**/dry-run/
+!/broadcast/.gitkeep
+
+# ============================================
+# Foundry — generated reports & docs
+# ============================================
+# forge coverage output
+coverage/
+# forge snapshot / gas reports
+gas-reports/
+*.gas-snapshot
+# forge doc output
+docs/
+
+# ============================================
+# Environment & secrets
+# ============================================
+.env
+.env.*
+!.env.example
+
+# ============================================
+# Dependencies
+# ============================================
+node_modules/
+
+# ============================================
+# IDE / Editor
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# ============================================
+# OS
+# ============================================
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ============================================
+# Logs / Temp
+# ============================================
+*.log
+logs/
+tmp/
+temp/
+.tmp/
