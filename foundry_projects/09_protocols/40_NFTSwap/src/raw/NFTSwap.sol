@@ -1,0 +1,105 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.35;
+
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+
+/**
+ * @dev NFTSwap NFT交易所合约
+ */
+contract NFTSwap is IERC721Receiver {
+
+    // 定义order结构体
+    struct Order {
+        address owner;
+        uint256 price;
+    }
+
+    // NFT Order映射: (nft地址 => (tokenId => Order))
+    mapping(address => mapping(uint256 => Order)) public nftList;
+
+    // 事件
+    event List(address indexed seller, address indexed nftAddr, uint256 indexed tokenId, uint256 price);
+    event Purchase(address indexed buyer, address indexed nftAddr, uint256 indexed tokenId, uint256 price);
+    event Revoke(address indexed seller, address indexed nftAddr, uint256 indexed tokenId);
+    event Update(address indexed seller, address indexed nftAddr, uint256 indexed tokenId, uint256 newPrice);
+
+    // 实现{IERC721Receiver}的onERC721Received，能够接收ERC721代币
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external override returns (bytes4) {
+        return IERC721Receiver.onERC721Received.selector;
+    }
+
+    // 挂单: 卖家上架NFT，合约地址为_nftAddr，tokenId为_tokenId，价格_price为以太坊（单位是wei）
+    function list(address _nftAddr, uint256 _tokenId, uint256 _price) public {
+        IERC721 _nft = IERC721(_nftAddr);
+        require(_nft.getApproved(_tokenId) == address(this), "Need Approval");
+        require(_price > 0);
+
+        Order storage _order = nftList[_nftAddr][_tokenId];
+        _order.owner = msg.sender;
+        _order.price = _price;
+
+        _nft.safeTransferFrom(msg.sender, address(this), _tokenId);
+
+        emit List(msg.sender, _nftAddr, _tokenId, _price);
+    }
+
+    // 撤单：卖家取消挂单
+    function revoke(address _nftAddr, uint256 _tokenId) public {
+        Order storage _order = nftList[_nftAddr][_tokenId];
+        require(_order.owner == msg.sender, "Not Owner");
+
+        IERC721 _nft = IERC721(_nftAddr);
+        require(_nft.ownerOf(_tokenId) == address(this), "Invalid Order");
+
+        _nft.safeTransferFrom(address(this), msg.sender, _tokenId);
+        delete nftList[_nftAddr][_tokenId];
+
+        emit Revoke(msg.sender, _nftAddr, _tokenId);
+    }
+
+    // 调整价格: 卖家调整挂单价格
+    function update(address _nftAddr, uint256 _tokenId, uint256 _newPrice) public {
+        require(_newPrice > 0, "Invalid Price");
+        Order storage _order = nftList[_nftAddr][_tokenId];
+        require(_order.owner == msg.sender, "Not Owner");
+
+        IERC721 _nft = IERC721(_nftAddr);
+        require(_nft.ownerOf(_tokenId) == address(this), "Invalid Order");
+
+        _order.price = _newPrice;
+
+        emit Update(msg.sender, _nftAddr, _tokenId, _newPrice);
+    }
+
+    // 购买: 买家购买NFT，合约为_nftAddr，tokenId为_tokenId，调用函数时要附带ETH
+    function purchase(address _nftAddr, uint256 _tokenId) public payable {
+        Order storage _order = nftList[_nftAddr][_tokenId];
+        require(_order.price > 0, "Invalid Price");
+        require(msg.value >= _order.price, "Increase price");
+
+        IERC721 _nft = IERC721(_nftAddr);
+        require(_nft.ownerOf(_tokenId) == address(this), "Invalid Order");
+
+        _nft.safeTransferFrom(address(this), msg.sender, _tokenId);
+        (bool success, ) = payable(_order.owner).call{value: _order.price}("");
+        require(success, "Transfer failed.");
+
+        if (msg.value > _order.price) {
+            (success, ) = payable(msg.sender).call{value: msg.value - _order.price}("");
+            require(success, "Refund failed.");
+        }
+
+        emit Purchase(msg.sender, _nftAddr, _tokenId, _order.price);
+
+        delete nftList[_nftAddr][_tokenId];
+    }
+
+    // 回退函数，接收ETH
+    fallback() external payable {}
+}
